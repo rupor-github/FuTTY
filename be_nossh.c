@@ -15,6 +15,7 @@ Backend *backends[] = {
     &rlogin_backend,
     &raw_backend,
     &cygterm_backend,
+    &adb_backend,
     NULL
 };
 

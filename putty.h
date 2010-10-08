@@ -333,7 +333,8 @@ enum {
     /* PROT_SERIAL is supported on a subset of platforms, but it doesn't
      * hurt to define it globally. */
     PROT_SERIAL,
-    PROT_CYGTERM
+    PROT_CYGTERM,
+    PROT_ADB
 };
 
 enum {
@@ -1081,6 +1082,12 @@ extern Backend loop_backend;
  */
 
 extern Backend raw_backend;
+
+/*
+ * Exports from adb.c.
+ */
+
+extern Backend adb_backend;
 
 /*
  * Exports from rlogin.c.
