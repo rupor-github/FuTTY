@@ -1637,6 +1637,10 @@ static void init_fonts(int pick_width, int pick_height)
 
     f(FONT_NORMAL, font->charset, fw_dontcare, FALSE);
 
+    if (bold_mode == BOLD_FONT) {
+        f(FONT_BOLD, font->charset, fw_bold, FALSE);
+    }
+
     SelectObject(hdc, fonts[FONT_NORMAL]);
     GetTextMetrics(hdc, &tm);
 
@@ -1728,9 +1732,6 @@ static void init_fonts(int pick_width, int pick_height)
 	}
     }
 
-    if (bold_mode == BOLD_FONT) {
-	f(FONT_BOLD, font->charset, fw_bold, FALSE);
-    }
 #undef f
 
     descent = tm.tmAscent + 1;
