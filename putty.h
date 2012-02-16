@@ -896,6 +896,10 @@ void cleanup_exit(int);
     X(INT, NONE, start_tray) \
     X(INT, NONE, tray_restore) \
     X(FILENAME, NONE, win_icon) \
+    /*                                     \
+     * HACK: PuttyTray / Nutty             \
+     * Hyperlink stuff: Underline settings \
+     */                                    \
     X(INT, NONE, url_ctrl_click) \
     X(INT, NONE, url_underline) \
     X(INT, NONE, url_defbrowser) \

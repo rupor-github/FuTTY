@@ -321,6 +321,9 @@ struct terminal_tag {
     int scroll_on_disp;
     int scroll_on_key;
     int xterm_256_colour;
+	/*
+	 * HACK: PuttyTray / Nutty
+	 */
     int url_update;
 };
 

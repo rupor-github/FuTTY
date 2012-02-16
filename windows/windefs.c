@@ -13,6 +13,10 @@ FontSpec *platform_default_fontspec(const char *name)
         versioninfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
         GetVersionEx(&versioninfo);
 
+		/*
+		 * HACK: PuttyTray / Vista
+		 * Check windows version and set default font to 'consolas' if this is Windows Vista
+		 */
         if (versioninfo.dwMajorVersion >= 6)
             return fontspec_new("Consolas", 0, 10, ANSI_CHARSET);
         return fontspec_new("Courier New", 0, 10, ANSI_CHARSET);

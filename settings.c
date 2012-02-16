@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "putty.h"
 #include "storage.h"
+#include "urlhack.h"
 
 /*
  * HACK: PuttyTray / Nutty
@@ -851,6 +852,10 @@ void load_open_settings(void *sesskey, Conf *conf)
     gppi(sesskey, "StartTray", 0, conf, CONF_start_tray);
     gppi(sesskey, "TrayRestore", 1, conf, CONF_tray_restore);
     gppfile(sesskey, "WindowIcon", conf, CONF_win_icon);
+    /*
+     * HACK: PuttyTray / Nutty
+     * Hyperlink stuff: Save hyperlink settings
+     */
     gppi(sesskey, "HyperlinkUnderline", 1, conf, CONF_url_underline);
     gppi(sesskey, "HyperlinkUseCtrlClick", 0, conf, CONF_url_ctrl_click);
     gppi(sesskey, "HyperlinkBrowserUseDefault", 1, conf, CONF_url_defbrowser);
