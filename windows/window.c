@@ -730,9 +730,9 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 		wndclass.cbWndExtra = 0;
 		wndclass.hInstance = inst;
 
-		if (cfg.win_icon[0]) {
-			wndclass.hIcon = extract_icon(cfg.win_icon, FALSE);
-			wndclass.hIconSm = extract_icon(cfg.win_icon, TRUE);
+		if (conf_get_str(conf, CONF_win_icon)[0]) {
+			wndclass.hIcon = extract_icon(conf_get_str(conf, CONF_win_icon), FALSE);
+			wndclass.hIconSm = extract_icon(conf_get_str(conf, CONF_win_icon), TRUE);
 		} else {
 			wndclass.hIcon = LoadImage(inst, MAKEINTRESOURCE(IDI_MAINICON), IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR|LR_SHARED);
 			wndclass.hIconSm = LoadImage(inst, MAKEINTRESOURCE(IDI_MAINICON), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR|LR_SHARED);
@@ -882,7 +882,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	 * HACK: PuttyTray / PuTTY File
 	 * Added storagetype to get_sesslist
 	 */
-	get_sesslist(&sesslist, TRUE, cfg.session_storagetype);
+	get_sesslist(&sesslist, TRUE, conf_get_int(conf, CONF_session_storagetype));
 	update_savedsess_menu();
 
 	for (j = 0; j < lenof(popup_menus); j++) {
@@ -931,7 +931,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	puttyTray.uID	= 1983; 
 	puttyTray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; 
 	puttyTray.uCallbackMessage = WM_NOTIFY_PUTTYTRAY;
-	if (cfg.win_icon[0]) {
+	if (conf_get_str(conf, CONF_win_icon)[0]) {
 		puttyTray.hIcon	= wndclass.hIconSm;
 	} else {
 		puttyTray.hIcon	= LoadImage(inst, MAKEINTRESOURCE(IDI_MAINICON), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR|LR_SHARED);
@@ -954,8 +954,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	 * HACK: PuttyTray / Nutty
 	 * Hyperlink stuff: Set the regular expression
 	 */
-	if (term->cfg.url_defregex == 0) {
-		urlhack_set_regular_expression(term->cfg.url_regex);
+	if (conf_get_int(term->conf, CONF_url_defregex) == 0) {
+		urlhack_set_regular_expression(conf_get_str(term->conf, CONF_url_regex));
 	}
 
     /*
@@ -983,10 +983,10 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	 */
 	puttyTrayVisible = FALSE;
 	
-	if (cfg.tray == TRAY_START || cfg.tray == TRAY_ALWAYS) {
-		taskbar_addicon(cfg.win_name_always ? window_name : icon_name, TRUE);
+	if (conf_get_int(conf, CONF_tray) == TRAY_START || conf_get_int(conf, CONF_tray) == TRAY_ALWAYS) {
+		taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, TRUE);
 	}
-	if (cfg.tray == TRAY_START) {
+	if (conf_get_int(conf, CONF_tray) == TRAY_START) {
 		ShowWindow(hwnd, SW_HIDE);
 		windowMinimized = TRUE;
 	} else {
@@ -999,8 +999,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	/*
 	 * HACK: PuttyTray / Transparency
 	 */
-	if (cfg.transparency >= 50 && cfg.transparency < 255) {
-		MakeWindowTransparent(hwnd, cfg.transparency);
+	if (conf_get_int(conf, CONF_transparency) >= 50 && conf_get_int(conf, CONF_transparency) < 255) {
+		MakeWindowTransparent(hwnd, conf_get_int(conf, CONF_transparency));
 	}
 
     while (1) {
@@ -1264,7 +1264,7 @@ void connection_fatal(void *frontend, char *fmt, ...)
 	/*
 	 * HACK: PuTTYTray / Reconnect on connection failure
 	 */
-	if (cfg.failure_reconnect) {
+	if (conf_get_int(conf, CONF_failure_reconnect)) {
 		time_t tnow = time(NULL);
 		close_session();
 
@@ -2269,8 +2269,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		 * HACK: PuttyTray / PuTTY File
 		 * Added storagetype to get_sesslist
 		 */
-	    get_sesslist(&sesslist, FALSE, cfg.session_storagetype); /* free */
-	    get_sesslist(&sesslist, TRUE, cfg.session_storagetype);
+	    get_sesslist(&sesslist, FALSE, conf_get_int(conf, CONF_session_storagetype)); /* free */
+	    get_sesslist(&sesslist, TRUE, conf_get_int(conf, CONF_session_storagetype));
 	    update_savedsess_menu();
 	    return 0;
 	}
@@ -2439,11 +2439,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		 * HACK: PuttyTray / Transparency
 		 * Reconfigure
 		 */
-		if (cfg.transparency >= 50) {
-			if (cfg.transparency > 255) {
+		if (conf_get_int(conf, CONF_transparency) >= 50) {
+			if (conf_get_int(conf, CONF_transparency) > 255) {
 				MakeWindowTransparent(hwnd, 255);
 			} else {
-				MakeWindowTransparent(hwnd, cfg.transparency);
+				MakeWindowTransparent(hwnd, conf_get_int(conf, CONF_transparency));
 			}
 		} else {
 			MakeWindowTransparent(hwnd, 255);
@@ -2453,8 +2453,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		 * HACK: PuttyTray / Nutty
 		 * Reconfigure
 		 */
-		if (cfg.url_defregex == 0) {
-			urlhack_set_regular_expression(cfg.url_regex);
+		if (conf_get_int(conf, CONF_url_defregex) == 0) {
+			urlhack_set_regular_expression(conf_get_str(conf, CONF_url_regex));
 		}
 		term->url_update = TRUE;
 		term_update(term);
@@ -2463,11 +2463,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		 * HACK: PuttyTray / Session Icon
 		 * Reconfigure
 		 */
-		if (cfg.win_icon[0]) {
-			hIcon = extract_icon(cfg.win_icon, TRUE);
+		if (conf_get_str(conf, CONF_win_icon)[0]) {
+			hIcon = extract_icon(conf_get_str(conf, CONF_win_icon), TRUE);
 			DestroyIcon(puttyTray.hIcon);
 			puttyTray.hIcon = hIcon;
-			SetClassLongPtr(hwnd, GCLP_HICON, (LONG_PTR)extract_icon(cfg.win_icon, FALSE));
+			SetClassLongPtr(hwnd, GCLP_HICON, (LONG_PTR)extract_icon(conf_get_str(conf, CONF_win_icon), FALSE));
 			SetClassLongPtr(hwnd, GCLP_HICONSM, (LONG_PTR)hIcon);
 		} else {
 			inst = (HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE);
@@ -2477,22 +2477,22 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 			SetClassLongPtr(hwnd, GCLP_HICONSM, (LONG_PTR)LoadImage(inst, MAKEINTRESOURCE(IDI_MAINICON), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR|LR_SHARED));
 		}
 		if (puttyTrayVisible) {
-			taskbar_addicon(cfg.win_name_always ? window_name : icon_name, TRUE);
+			taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, TRUE);
 		}
 
 		/*
 		 * HACK: PuttyTray
 		 * Reconfigure
 		 */
-		if (cfg.tray == TRAY_NORMAL || cfg.tray == TRAY_START) {
+		if (conf_get_int(conf, CONF_tray) == TRAY_NORMAL || conf_get_int(conf, CONF_tray) == TRAY_START) {
 			if (windowMinimized) {
 				ShowWindow(hwnd, SW_HIDE);
-				taskbar_addicon(cfg.win_name_always ? window_name : icon_name, TRUE);
+				taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, TRUE);
 			} else {
 				taskbar_addicon("", FALSE);
 			}
-		} else if (cfg.tray == TRAY_ALWAYS) {
-			taskbar_addicon(cfg.win_name_always ? window_name : icon_name, TRUE);
+		} else if (conf_get_int(conf, CONF_tray) == TRAY_ALWAYS) {
+			taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, TRUE);
 		} else {
 			taskbar_addicon("", FALSE);
 		}
@@ -2654,8 +2654,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	    windowMinimized = FALSE;
 
 	    // Remove icon
-	    if (cfg.tray != TRAY_ALWAYS) {
-	      taskbar_addicon(cfg.win_name_always ? window_name : icon_name, FALSE);
+	    if (conf_get_int(conf, CONF_tray) != TRAY_ALWAYS) {
+	      taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, FALSE);
 	    }
 	    break;
 	  case IDM_TRAYCLOSE:
@@ -2854,7 +2854,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		urlhack_mouse_old_x = TO_CHR_X(X_POS(lParam));
 		urlhack_mouse_old_y = TO_CHR_Y(Y_POS(lParam));
 
-		if ((!term->cfg.url_ctrl_click || urlhack_is_ctrl_pressed()) &&
+		if ((!conf_get_int(term->conf, CONF_url_ctrl_click) || urlhack_is_ctrl_pressed()) &&
 			urlhack_is_in_link_region(urlhack_mouse_old_x, urlhack_mouse_old_y)) {
 				if (urlhack_cursor_is_hand == 0) {
 					SetClassLongPtr(hwnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, MAKEINTRESOURCE(IDC_HAND)));
@@ -3189,8 +3189,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 			  conf_get_int(conf, CONF_win_name_always) ?
 			  window_name : icon_name);
 
-		if (cfg.tray == TRAY_NORMAL || cfg.tray == TRAY_START || control_pressed > 0) {
-			taskbar_addicon(cfg.win_name_always ? window_name : icon_name, TRUE);
+		if (conf_get_int(conf, CONF_tray) == TRAY_NORMAL || conf_get_int(conf, CONF_tray) == TRAY_START || control_pressed > 0) {
+			taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, TRUE);
 			ShowWindow(hwnd, SW_HIDE);
 		}
 		windowMinimized = TRUE;
@@ -3365,7 +3365,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	 * WARNING: Spans over multiple CASEs
 	 */
 	case WM_KEYDOWN:
-		if (wParam == VK_CONTROL && term->cfg.url_ctrl_click) {
+		if (wParam == VK_CONTROL && conf_get_int(term->conf, CONF_url_ctrl_click)) {
 			GetCursorPos(&cursor_pt);
 			ScreenToClient(hwnd, &cursor_pt);
 
@@ -3378,7 +3378,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		}	
 
 	case WM_KEYUP:
-		if (wParam == VK_CONTROL && term->cfg.url_ctrl_click) {
+		if (wParam == VK_CONTROL && conf_get_int(term->conf, CONF_url_ctrl_click)) {
 			SetCursor(LoadCursor(NULL, IDC_IBEAM));
 			term_update(term);
 		
@@ -3564,7 +3564,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	 * HACK: PuttyTray / Reconnect
 	 */
 	case WM_POWERBROADCAST:
-		if(cfg.wakeup_reconnect) {
+		if(conf_get_int(conf, CONF_wakeup_reconnect)) {
 			switch(wParam) {
 				case PBT_APMRESUMESUSPEND:
 				case PBT_APMRESUMEAUTOMATIC:
@@ -3606,10 +3606,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 			uMouseMsg = (UINT)lParam; 
 
 			if (uID = 1983) {
-				if (uMouseMsg == WM_LBUTTONDBLCLK || (cfg.tray_restore == TRUE && uMouseMsg == WM_LBUTTONUP)) {
+				if (uMouseMsg == WM_LBUTTONDBLCLK || (conf_get_int(conf, CONF_tray_restore) == TRUE && uMouseMsg == WM_LBUTTONUP)) {
 					// Remove icon
-					if (cfg.tray != TRAY_ALWAYS) {
-						taskbar_addicon(cfg.win_name_always ? window_name : icon_name, FALSE);
+					if (conf_get_int(conf, CONF_tray) != TRAY_ALWAYS) {
+						taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, FALSE);
 					}
 
 					// Sleep a little while, otherwise the click event is sent to, for example, the Outlook 2003 Tray Icon, and it will also pop its menu.
@@ -3695,10 +3695,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		    } /* else: not sure when this can fail */
 		} else {
 			if (control_pressed) {
-				cfg.font.height += MBT_WHEEL_UP == b ? 1 : -1;
+				conf_get_fontspec(conf, CONF_font)->height += MBT_WHEEL_UP == b ? 1 : -1;
 
 				// short version of IDM_RECONF's reconfig:
-				term_size(term, cfg.height, cfg.width, cfg.savelines);
+				term_size(term, conf_get_int(conf, CONF_height), conf_get_int(conf, CONF_width), conf_get_int(conf, CONF_savelines));
 				reset_window(2);
 			} else {
 				/* trigger a scroll */
@@ -5186,7 +5186,7 @@ void set_title(void *frontend, char *title)
 	 * HACK: Putty Tray
 	 * Change Trayicon Tooltip to window title
 	 */
-	taskbar_addicon(cfg.win_name_always ? window_name : icon_name, puttyTrayVisible);
+	taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, puttyTrayVisible);
 }
 
 void set_icon(void *frontend, char *title)
