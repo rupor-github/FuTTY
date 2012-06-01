@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\adb.c" />
     <ClCompile Include="..\..\..\be_all_s.c" />
     <ClCompile Include="..\..\..\cmdline.c" />
     <ClCompile Include="..\..\..\conf.c" />
@@ -51,6 +52,7 @@
     <ClCompile Include="..\..\..\tree234.c" />
     <ClCompile Include="..\..\..\version.c" />
     <ClCompile Include="..\..\..\wildcard.c" />
+    <ClCompile Include="..\..\..\windows\cygterm.c" />
     <ClCompile Include="..\..\..\windows\wincons.c" />
     <ClCompile Include="..\..\..\windows\windefs.c" />
     <ClCompile Include="..\..\..\windows\wingss.c" />
@@ -87,6 +89,8 @@
     <ClInclude Include="..\..\..\terminal.h" />
     <ClInclude Include="..\..\..\tree234.h" />
     <ClInclude Include="..\..\..\unix\unix.h" />
+    <ClInclude Include="..\..\..\windows\cthelper\cthelper.h" />
+    <ClInclude Include="..\..\..\windows\cthelper\message.h" />
     <ClInclude Include="..\..\..\windows\rcstuff.h" />
     <ClInclude Include="..\..\..\windows\re_lib\regexp.h" />
     <ClInclude Include="..\..\..\windows\urlhack.h" />
