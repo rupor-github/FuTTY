@@ -2,6 +2,7 @@
  * HACK: PuttyTray / Nutty
  * Hyperlink stuff: CORE FILE! Don't forget to COPY IT TO THE NEXT VERSION
  */
+#ifndef NO_URLHACK
 #include <windows.h>
 #include <vector>
 #include <sstream>
@@ -289,3 +290,4 @@ void urlhack_go_find_me_some_hyperlinks(int screen_width)
 		text_pos = end_pos + 1;
 	}
 }
+#endif

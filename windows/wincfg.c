@@ -422,6 +422,7 @@ void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
 	 * HACK: PuttyTray / Nutty
 	 * Hyperlink stuff: The Window/Hyperlinks panel.
 	 */
+#ifndef NO_URLHACK
 	ctrl_settitle(b, "Window/Hyperlinks", "Options controlling behaviour of hyperlinks");
 	s = ctrl_getset(b, "Window/Hyperlinks", "general", "General options for hyperlinks");
 
@@ -462,6 +463,7 @@ void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
 
 	ctrl_text(s, "The single white space will be cropped in front of the link, if exists.",
 		  HELPCTX(no_help));
+#endif
 
     /*
      * Windows supports a local-command proxy. This also means we

@@ -13,7 +13,9 @@
 /*
  * HACK: PuttyTray / Nutty
  */ 
+#ifndef NO_URLHACK
 #include "urlhack.h"
+#endif
 
 #ifndef NO_MULTIMON
 #define COMPILE_MULTIMON_STUBS
@@ -290,7 +292,9 @@ void tray_updatemenu(BOOL disableMenuItems);
 /*
  * HACK: PuttyTray / Nutty
  */ 
+#ifndef NO_URLHACK
 static int urlhack_cursor_is_hand = 0;
+#endif
 /* Dummy routine, only required in plink. */
 void ldisc_update(void *frontend, int echo, int edit)
 {
@@ -994,9 +998,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	 * HACK: PuttyTray / Nutty
 	 * Hyperlink stuff: Set the regular expression
 	 */
+#ifndef NO_URLHACK
 	if (conf_get_int(term->conf, CONF_url_defregex) == 0) {
 		urlhack_set_regular_expression(conf_get_str(term->conf, CONF_url_regex));
 	}
+#endif
 
     /*
      * Set up the initial input locale.
@@ -2493,11 +2499,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		 * HACK: PuttyTray / Nutty
 		 * Reconfigure
 		 */
+#ifndef NO_URLHACK
 		if (conf_get_int(conf, CONF_url_defregex) == 0) {
 			urlhack_set_regular_expression(conf_get_str(conf, CONF_url_regex));
 		}
 		term->url_update = TRUE;
 		term_update(term);
+#endif
 
 		/*
 		 * HACK: PuttyTray / Session Icon
@@ -2890,6 +2898,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	 * HACK: PuttyTray / Nutty
 	 * Hyperlink stuff: Change cursor type if hovering over link
 	 */ 
+#ifndef NO_URLHACK
 	if (urlhack_mouse_old_x != TO_CHR_X(X_POS(lParam)) || urlhack_mouse_old_y != TO_CHR_Y(Y_POS(lParam))) {
 		urlhack_mouse_old_x = TO_CHR_X(X_POS(lParam));
 		urlhack_mouse_old_y = TO_CHR_Y(Y_POS(lParam));
@@ -2915,6 +2924,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		}
 
 	}
+#endif
 	/* HACK: PuttyTray / Nutty : END */
 
 	if (wParam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON) &&
@@ -3409,11 +3419,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 			GetCursorPos(&cursor_pt);
 			ScreenToClient(hwnd, &cursor_pt);
 
+#ifndef NO_URLHACK
 			if (urlhack_is_in_link_region(TO_CHR_X(cursor_pt.x), TO_CHR_Y(cursor_pt.y))) {
 				SetCursor(LoadCursor(NULL, IDC_HAND));
 				term_update(term);
 			}
-		
+#endif
+
 			goto KEY_END;
 		}	
 

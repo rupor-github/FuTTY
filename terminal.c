@@ -14,7 +14,9 @@
 /*
  * HACK: PuttyTray / Nutty
  */ 
+#ifndef NO_URLHACK
 #include "urlhack.h"
+#endif
 
 #define poslt(p1,p2) ( (p1).y < (p2).y || ( (p1).y == (p2).y && (p1).x < (p2).x ) )
 #define posle(p1,p2) ( (p1).y < (p2).y || ( (p1).y == (p2).y && (p1).x <= (p2).x ) )
@@ -4777,6 +4779,7 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 	 * TODO: We should find out somehow that the stuff on screen has changed since last
 	 *       paint. How to do it?
 	 */
+#ifndef NO_URLHACK
 	int urlhack_underline_always = (conf_get_int(term->conf, CONF_url_underline) == URLHACK_UNDERLINE_ALWAYS);
 
 	int urlhack_underline =
@@ -4811,6 +4814,7 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 		urlhack_hover_current = 1;
 	else
 		urlhack_hover_current = urlhack_is_in_this_link_region(urlhack_region, urlhack_mouse_old_x, urlhack_mouse_old_y);
+#endif
 	/* HACK: PuttyTray / Nutty : END */
 
     chlen = 1024;
@@ -4970,6 +4974,7 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 		 * HACK: PuttyTray / Nutty
 		 * Hyperlink stuff: Underline link regions if user has configured us so
 		 */
+#ifndef NO_URLHACK
 		if (urlhack_underline) {
 			if (j == urlhack_toggle_x && i == urlhack_toggle_y) {
 				urlhack_is_link = urlhack_is_link == 1 ? 0 : 1;
@@ -5005,6 +5010,7 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 
 			term->url_update = 0;
 		}
+#endif
 		/* HACK: PuttyTray / Nutty : END */
 
 	    /* Video reversing things */
@@ -5990,6 +5996,7 @@ void term_mouse(Terminal *term, Mouse_Button braw, Mouse_Button bcooked,
 	 * region, if so -> copy url to temporary buffer and launch it. Delete
 	 * the temporary buffer.
 	 */
+#ifndef NO_URLHACK
 	} else if (bcooked == MBT_SELECT && a == MA_RELEASE && term->selstate == ABOUT_TO) {
 	deselect(term);
 	term->selstate = NO_SELECTION;
@@ -6035,6 +6042,7 @@ void term_mouse(Terminal *term, Mouse_Button braw, Mouse_Button bcooked,
 		
 		sfree(linkbuf);
 	}
+#endif
 	/* HACK: PuttyTray / Nutty : END */
 
     } else if (bcooked == MBT_SELECT && (a == MA_2CLK || a == MA_3CLK)) {
