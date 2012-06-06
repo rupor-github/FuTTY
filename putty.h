@@ -137,6 +137,30 @@ typedef struct terminal_tag Terminal;
 #define ATTR_DEFBG   (258 << ATTR_BGSHIFT)
 #define ATTR_DEFAULT (ATTR_DEFFG | ATTR_DEFBG)
 
+/*
+ * HACK: PuttyTray / Nutty
+ * Hyperlink stuff: define
+ */
+#define CHAR_MASK    0x000000FFUL
+
+/*
+ * HACK: PuttyTray / Nutty
+ * Hyperlink stuff: Underline settings
+ */
+enum {
+	URLHACK_UNDERLINE_ALWAYS,
+	URLHACK_UNDERLINE_HOVER,
+	URLHACK_UNDERLINE_NEVER
+};
+
+/*
+ * HACK: PuttyTray
+ * Tray options
+ */
+enum {
+    TRAY_NEVER, TRAY_NORMAL, TRAY_START, TRAY_ALWAYS
+};
+
 struct sesslist {
     int nsessions;
     char **sessions;
@@ -853,6 +877,20 @@ void cleanup_exit(int);
     X(INT, NONE, shadowboldoffset) \
     X(INT, NONE, crhaslf) \
     X(STR, NONE, winclass) \
+    X(INT, NONE, transparency) \
+    X(INT, NONE, failure_reconnect) \
+    X(INT, NONE, wakeup_reconnect) \
+    X(INT, NONE, session_storagetype) \
+    X(INT, NONE, tray) \
+    X(INT, NONE, start_tray) \
+    X(INT, NONE, tray_restore) \
+    X(FILENAME, NONE, win_icon) \
+    X(INT, NONE, url_ctrl_click) \
+    X(INT, NONE, url_underline) \
+    X(INT, NONE, url_defbrowser) \
+    X(INT, NONE, url_defregex) \
+    X(FILENAME, NONE, url_browser) \
+    X(STR, NONE, url_regex) \
 
 /* Now define the actual enum of option keywords using that macro. */
 #define CONF_ENUM_DEF(valtype, keytype, keyword) CONF_ ## keyword,
@@ -930,9 +968,16 @@ char *save_settings(char *section, Conf *conf);
 void save_open_settings(void *sesskey, Conf *conf);
 void load_settings(char *section, Conf *conf);
 void load_open_settings(void *sesskey, Conf *conf);
-void get_sesslist(struct sesslist *, int allocate);
+int get_sesslist(struct sesslist *, int allocate, int storagetype);
 void do_defaults(char *, Conf *);
 void registry_cleanup(void);
+
+/*
+ * HACK: PuttyTray / PuTTY File
+ * Quick hack to load defaults from file
+ */
+void do_defaults_file(char *, Conf *);
+void load_settings_file(char *section, Conf *cfg);
 
 /*
  * Functions used by settings.c to provide platform-specific
@@ -1251,7 +1296,7 @@ void conf_filesel_handler(union control *ctrl, void *dlg,
 void conf_fontsel_handler(union control *ctrl, void *dlg,
 			  void *data, int event);
 void setup_config_box(struct controlbox *b, int midsession,
-		      int protocol, int protcfginfo);
+		      int protocol, int protcfginfo, int session_storagetype);
 
 /*
  * Exports from minibidi.c.

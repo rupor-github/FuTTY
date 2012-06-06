@@ -8,6 +8,11 @@
 #include "putty.h"
 #include "storage.h"
 
+/*
+ * HACK: PuttyTray / Nutty
+ */ 
+#include "urlhack.h"
+
 /* The cipher order given here is the default order. */
 static const struct keyvalwhere ciphernames[] = {
     { "aes",        CIPHER_AES,             -1, -1 },
@@ -512,6 +517,20 @@ void save_open_settings(void *sesskey, Conf *conf)
     write_setting_i(sesskey, "ApplicationCursorKeys", conf_get_int(conf, CONF_app_cursor));
     write_setting_i(sesskey, "ApplicationKeypad", conf_get_int(conf, CONF_app_keypad));
     write_setting_i(sesskey, "NetHackKeypad", conf_get_int(conf, CONF_nethack_keypad));
+    write_setting_i(sesskey, "Transparency", conf_get_int(conf, CONF_transparency));
+    write_setting_i(sesskey, "WakeupReconnect", conf_get_int(conf, CONF_wakeup_reconnect));
+    write_setting_i(sesskey, "FailureReconnect", conf_get_int(conf, CONF_failure_reconnect));
+    write_setting_i(sesskey, "StorageType", conf_get_int(conf, CONF_session_storagetype));
+    write_setting_i(sesskey, "Tray", conf_get_int(conf, CONF_tray));
+    write_setting_i(sesskey, "StartTray", conf_get_int(conf, CONF_start_tray));
+    write_setting_i(sesskey, "TrayRestore", conf_get_int(conf, CONF_tray_restore));
+    write_setting_filename(sesskey, "WinIcon", conf_get_filename(conf, CONF_win_icon));
+    write_setting_i(sesskey, "HyperlinkUnderline", conf_get_int(conf, CONF_url_underline));
+    write_setting_i(sesskey, "HyperlinkUseCtrlClick", conf_get_int(conf, CONF_url_ctrl_click));
+    write_setting_i(sesskey, "HyperlinkBrowserUseDefault", conf_get_int(conf, CONF_url_defbrowser));
+    write_setting_filename(sesskey, "HyperlinkBrowser", conf_get_filename(conf, CONF_url_browser));
+    write_setting_i(sesskey, "HyperlinkRegularExpressionUseDefault", conf_get_int(conf, CONF_url_defregex));
+    write_setting_s(sesskey, "HyperlinkRegularExpression", conf_get_str(conf, CONF_url_regex));
     write_setting_i(sesskey, "AltF4", conf_get_int(conf, CONF_alt_f4));
     write_setting_i(sesskey, "AltSpace", conf_get_int(conf, CONF_alt_space));
     write_setting_i(sesskey, "AltOnly", conf_get_int(conf, CONF_alt_only));
@@ -647,6 +666,19 @@ void load_settings(char *section, Conf *conf)
 
     if (conf_launchable(conf))
         add_session_to_jumplist(section);
+}
+
+/*
+ * HACK: PuttyTray / PuTTY File
+ * Quick hack to load defaults from file
+ */
+void load_settings_file(char *section, Conf * cfg)
+{
+    void *sesskey;
+	set_storagetype(1);
+    sesskey = open_settings_r(section);
+    load_open_settings(sesskey, cfg);
+    close_settings_r(sesskey);
 }
 
 void load_open_settings(void *sesskey, Conf *conf)
@@ -804,6 +836,20 @@ void load_open_settings(void *sesskey, Conf *conf)
     gppi(sesskey, "ApplicationCursorKeys", 0, conf, CONF_app_cursor);
     gppi(sesskey, "ApplicationKeypad", 0, conf, CONF_app_keypad);
     gppi(sesskey, "NetHackKeypad", 0, conf, CONF_nethack_keypad);
+    gppi(sesskey, "Transparency", 255, conf, CONF_transparency);
+    gppi(sesskey, "WakeupReconnect", 0, conf, CONF_wakeup_reconnect);
+    gppi(sesskey, "FailureReconnect", 0, conf, CONF_failure_reconnect);
+    gppi(sesskey, "StorageType", 0, conf, CONF_session_storagetype);
+    gppi(sesskey, "Tray", TRAY_NEVER, conf, CONF_tray);
+    gppi(sesskey, "StartTray", 0, conf, CONF_start_tray);
+    gppi(sesskey, "TrayRestore", 0, conf, CONF_tray_restore);
+    gppfile(sesskey, "WinIcon", conf, CONF_win_icon);
+    gppi(sesskey, "HyperlinkUnderline", 1, conf, CONF_url_underline);
+    gppi(sesskey, "HyperlinkUseCtrlClick", 0, conf, CONF_url_ctrl_click);
+    gppi(sesskey, "HyperlinkBrowserUseDefault", 1, conf, CONF_url_defbrowser);
+    gppfile(sesskey, "HyperlinkBrowser", conf, CONF_url_browser);
+    gppi(sesskey, "HyperlinkRegularExpressionUseDefault", 1, conf, CONF_url_defregex);
+    gpps(sesskey, "HyperlinkRegularExpression", urlhack_default_regex, conf, CONF_url_regex);
     gppi(sesskey, "AltF4", 1, conf, CONF_alt_f4);
     gppi(sesskey, "AltSpace", 0, conf, CONF_alt_space);
     gppi(sesskey, "AltOnly", 0, conf, CONF_alt_only);
@@ -846,8 +892,8 @@ void load_open_settings(void *sesskey, Conf *conf)
 #ifdef PUTTY_UNIX_H
 		 / 1000
 #endif
-		 );
-    gppi(sesskey, "ScrollbackLines", 200, conf, CONF_savelines);
+    );
+    gppi(sesskey, "ScrollbackLines", 1000, conf, CONF_savelines);
     gppi(sesskey, "DECOriginMode", 0, conf, CONF_dec_om);
     gppi(sesskey, "AutoWrapMode", 1, conf, CONF_wrap_mode);
     gppi(sesskey, "LFImpliesCR", 0, conf, CONF_lfhascr);
@@ -983,6 +1029,15 @@ void do_defaults(char *session, Conf *conf)
     load_settings(session, conf);
 }
 
+/*
+ * HACK: PuttyTray / PuTTY File
+ * Quick hack to load defaults from file
+ */
+void do_defaults_file(char *session, Conf *conf)
+{
+    load_settings_file(session, conf);
+}
+
 static int sessioncmp(const void *av, const void *bv)
 {
     const char *a = *(const char *const *) av;
@@ -1003,18 +1058,28 @@ static int sessioncmp(const void *av, const void *bv)
     return strcmp(a, b);	       /* otherwise, compare normally */
 }
 
-void get_sesslist(struct sesslist *list, int allocate)
+/*
+ * HACK: PuttyTray / PuTTY File
+ * Updated get_sesslist with storagetype
+ */
+int get_sesslist(struct sesslist *list, int allocate, int storagetype) // HACK: PuTTYTray / PuTTY File - changed return type
 {
     char otherbuf[2048];
     int buflen, bufsize, i;
     char *p, *ret;
     void *handle;
+	
+	// HACK: PUTTY FILE
+	int autoswitch = 0;
+	if (storagetype > 1) {
+		storagetype = storagetype - 2;
+		autoswitch = 1;
+	}
 
     if (allocate) {
-
 	buflen = bufsize = 0;
 	list->buffer = NULL;
-	if ((handle = enum_settings_start()) != NULL) {
+	if ((handle = enum_settings_start(storagetype)) != NULL) { // HACK: PuTTYTray / PuTTY File - storagetype
 	    do {
 		ret = enum_settings_next(handle, otherbuf, sizeof(otherbuf));
 		if (ret) {
@@ -1031,6 +1096,45 @@ void get_sesslist(struct sesslist *list, int allocate)
 	}
 	list->buffer = sresize(list->buffer, buflen + 1, char);
 	list->buffer[buflen] = '\0';
+
+	/*
+	 * HACK: PuttyTray / PuTTY File
+	 * Switch to file mode if registry is empty (and in registry mode)
+	 */
+	if (autoswitch == 1 && storagetype != 1 && buflen == 0) {
+		storagetype = 1;
+
+		// Ok, this is a copy of the code above. Crude but working
+		buflen = bufsize = 0;
+		list->buffer = NULL;
+		if ((handle = enum_settings_start(1)) != NULL) { // Force file storage type
+			do {
+			ret = enum_settings_next(handle, otherbuf, sizeof(otherbuf));
+			if (ret) {
+				int len = strlen(otherbuf) + 1;
+				if (bufsize < buflen + len) {
+				bufsize = buflen + len + 2048;
+				list->buffer = sresize(list->buffer, bufsize, char);
+				}
+				strcpy(list->buffer + buflen, otherbuf);
+				buflen += strlen(list->buffer + buflen) + 1;
+			}
+			} while (ret);
+			enum_settings_finish(handle);
+		}
+		list->buffer = sresize(list->buffer, buflen + 1, char);
+		list->buffer[buflen] = '\0';
+	}
+
+	/*
+	 * HACK: PuttyTray / PuTTY File
+	 * If registry is empty AND file store is empty, show empty registry
+	 */
+	if (autoswitch == 1 && storagetype == 1 && buflen == 0) {
+		storagetype = 0;
+		set_storagetype(storagetype);
+	}
+
 
 	/*
 	 * Now set up the list of sessions. Note that "Default
@@ -1067,4 +1171,10 @@ void get_sesslist(struct sesslist *list, int allocate)
 	list->buffer = NULL;
 	list->sessions = NULL;
     }
+
+	/*
+	 * HACK: PuttyTray / PuTTY File
+	 * Return storagetype
+	 */
+	return storagetype;
 }
