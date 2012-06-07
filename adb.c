@@ -192,7 +192,11 @@ static const char *adb_init(void *frontend_handle, void **backend_handle,
 
 	/* send initial data to adb server */
 	
+#if !defined __MINGW32__ && !defined __CYGWIN__
 	sprintf_s(sendhost,512,"%04xhost:%s",strlen(host)+5,host);
+#else
+	snprintf(sendhost,512,"%04xhost:%s",strlen(host)+5,host);
+#endif
 
 	sk_write(adb->s,sendhost,strlen(host)+9);
 	sk_flush(adb->s);
