@@ -771,6 +771,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 		wndclass.lpfnWndProc = WndProc;
 		wndclass.cbClsExtra = 0;
 		wndclass.cbWndExtra = 0;
+		if (conf_get_int(conf, CONF_ctrl_tab_switch))
+			wndclass.cbWndExtra += 8;
 		wndclass.hInstance = inst;
 
 		win_icon = conf_get_filename(conf, CONF_win_icon);
@@ -2219,6 +2221,44 @@ static int is_alt_pressed(void)
     return FALSE;
 }
 
+struct ctrl_tab_info {
+    int direction;
+    HWND  self;
+    DWORD self_hi_date_time;
+    DWORD self_lo_date_time;
+    HWND  next;
+    DWORD next_hi_date_time;
+    DWORD next_lo_date_time;
+    int   next_self;
+};
+
+static BOOL CALLBACK CtrlTabWindowProc(HWND hwnd, LPARAM lParam) {
+    struct ctrl_tab_info* info = (struct ctrl_tab_info*) lParam;
+    char class_name[16];
+    int wndExtra;
+    // Note: "FuTTY" is hardcoded into the next line, change it to PuTTY if you re-use this code..
+    if (info->self != hwnd && (wndExtra = GetClassLong(hwnd, GCL_CBWNDEXTRA)) >= 8 && GetClassName(hwnd, class_name, sizeof class_name) >= 5 && memcmp(class_name, "FuTTY", 5) == 0) {
+        DWORD hwnd_hi_date_time = GetWindowLong(hwnd, wndExtra - 8);
+        DWORD hwnd_lo_date_time = GetWindowLong(hwnd, wndExtra - 4);
+        int hwnd_self, hwnd_next;
+	hwnd_self = hwnd_hi_date_time - info->self_hi_date_time;
+	if (hwnd_self == 0) 
+	    hwnd_self = hwnd_lo_date_time - info->self_lo_date_time;
+	hwnd_self *= info->direction;
+        hwnd_next = hwnd_hi_date_time - info->next_hi_date_time;
+	if (hwnd_next == 0) 
+	    hwnd_next = hwnd_lo_date_time - info->next_lo_date_time;
+	hwnd_next *= info->direction;
+        if (hwnd_self > 0 && hwnd_next < 0 || (hwnd_self > 0 || hwnd_next < 0) && info->next_self <= 0) {
+            info->next              = hwnd;
+            info->next_hi_date_time = hwnd_hi_date_time;
+            info->next_lo_date_time = hwnd_lo_date_time;
+            info->next_self         = hwnd_self;
+        }
+    }
+    return TRUE;
+}
+
 static int resizing;
 
 void notify_remote_exit(void *fe)
@@ -2291,6 +2331,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	}
 	return 0;
       case WM_CREATE:
+	    if (conf_get_int(conf, CONF_ctrl_tab_switch)) {
+		    int wndExtra = GetClassLong(hwnd, GCL_CBWNDEXTRA);
+		    FILETIME filetime;
+		    GetSystemTimeAsFileTime(&filetime);
+		    SetWindowLong(hwnd, wndExtra - 8, filetime.dwHighDateTime);
+		    SetWindowLong(hwnd, wndExtra - 4, filetime.dwLowDateTime);
+	    }
 	break;
       case WM_CLOSE:
 	{
@@ -3418,31 +3465,41 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	 * WARNING: Spans over multiple CASEs
 	 */
 	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+		if (conf_get_int(conf, CONF_ctrl_tab_switch) && wParam == VK_TAB && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0) {
+		    struct ctrl_tab_info info = {
+		         GetKeyState(VK_SHIFT) < 0 ? 1 : -1,
+		         hwnd,
+		    };
+		    info.next_hi_date_time = info.self_hi_date_time = GetWindowLong(hwnd, 0);
+		    info.next_lo_date_time = info.self_lo_date_time = GetWindowLong(hwnd, 4);
+		    EnumWindows(CtrlTabWindowProc, (LPARAM) &info);
+		    if (info.next != NULL)
+		        SetForegroundWindow(info.next);
+		    return 0;
+		}
+#ifndef NO_URLHACK
 		if (wParam == VK_CONTROL && conf_get_int(term->conf, CONF_url_ctrl_click)) {
 			GetCursorPos(&cursor_pt);
 			ScreenToClient(hwnd, &cursor_pt);
-
-#ifndef NO_URLHACK
 			if (urlhack_is_in_link_region(TO_CHR_X(cursor_pt.x), TO_CHR_Y(cursor_pt.y))) {
 				SetCursor(LoadCursor(NULL, IDC_HAND));
 				term_update(term);
 			}
-#endif
-
 			goto KEY_END;
-		}	
-
+		}
+#endif
 	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		if (lParam & 0x80000000) break;
+#ifndef NO_URLHACK
 		if (wParam == VK_CONTROL && conf_get_int(term->conf, CONF_url_ctrl_click)) {
 			SetCursor(LoadCursor(NULL, IDC_IBEAM));
 			term_update(term);
-		
 			goto KEY_END;
 		}
-	KEY_END:
-
-	case WM_SYSKEYDOWN:
-	case WM_SYSKEYUP:
+		KEY_END:
+#endif
 	/* HACK: PuttyTray / Nutty : END */
 
 	/*
@@ -3463,10 +3520,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	    int len;
 
 	    if (wParam == VK_PROCESSKEY) { /* IME PROCESS key */
-		if (message == WM_KEYDOWN) {
+		if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN) {
 		    MSG m;
 		    m.hwnd = hwnd;
-		    m.message = WM_KEYDOWN;
+		    m.message = message;
 		    m.wParam = wParam;
 		    m.lParam = lParam & 0xdfff;
 		    TranslateMessage(&m);
