@@ -35,7 +35,6 @@
 #endif
 
 #define IDI_MAINICON 200
-#define IDI_TRAYICON 201
 
 #define WM_SYSTRAY   (WM_APP + 6)
 #define WM_SYSTRAY2  (WM_APP + 7)
