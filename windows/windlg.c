@@ -392,7 +392,7 @@ static int CALLBACK GenericMainDlgProc(HWND hwnd, UINT msg,
 	SendMessage(hwnd, WM_SETICON, (WPARAM) ICON_BIG,
 		    (LPARAM) LoadIcon(hinst, MAKEINTRESOURCE(IDI_CFGICON)));
 #endif
-        	
+
 	/*
 	 * Centre the window.
 	 */
@@ -536,9 +536,9 @@ static int CALLBACK GenericMainDlgProc(HWND hwnd, UINT msg,
 		TreeView_GetSelection(((LPNMHDR) lParam)->hwndFrom);
 	    TVITEM item;
 	    char buffer[64];
- 
+
  	    SendMessage (hwnd, WM_SETREDRAW, FALSE, 0);
- 
+
 	    item.hItem = i;
 	    item.pszText = buffer;
 	    item.cchTextMax = sizeof(buffer);
@@ -565,7 +565,7 @@ static int CALLBACK GenericMainDlgProc(HWND hwnd, UINT msg,
 	    create_controls(hwnd, (char *)item.lParam);
 
 	    dlg_refresh(NULL, &dp);    /* set up control values */
- 
+
 	    SendMessage (hwnd, WM_SETREDRAW, TRUE, 0);
  	    InvalidateRect (hwnd, NULL, TRUE);
 
@@ -641,7 +641,7 @@ int do_config(void)
     int ret;
 
     ctrlbox = ctrl_new_box();
-    setup_config_box(ctrlbox, FALSE, 0, 0, 0); // HACK: PuttyTray / PuTTY File, Added 0 for 'int session_storagetype'
+    setup_config_box(ctrlbox, FALSE, 0, 0);
     win_setup_config_box(ctrlbox, &dp.hwnd, has_help(), FALSE, 0);
     dp_init(&dp);
     winctrl_init(&ctrls_base);
@@ -675,7 +675,7 @@ int do_reconfig(HWND hwnd, int protcfginfo)
 
     ctrlbox = ctrl_new_box();
     protocol = conf_get_int(conf, CONF_protocol);
-    setup_config_box(ctrlbox, TRUE, protocol, protcfginfo, conf_get_int(conf, CONF_session_storagetype));
+    setup_config_box(ctrlbox, TRUE, protocol, protcfginfo);
     win_setup_config_box(ctrlbox, &dp.hwnd, has_help(), TRUE, protocol);
     dp_init(&dp);
     winctrl_init(&ctrls_base);
@@ -895,7 +895,7 @@ int askappend(void *frontend, Filename *filename,
 
 /*
  * Warn about the obsolescent key file format.
- * 
+ *
  * Uniquely among these functions, this one does _not_ expect a
  * frontend handle. This means that if PuTTY is ported to a
  * platform which requires frontend handles, this function will be

@@ -11,7 +11,7 @@
 
 /*
  * HACK: PuttyTray / Nutty
- */ 
+ */
 #include "urlhack.h"
 
 /* The cipher order given here is the default order. */
@@ -403,7 +403,7 @@ static void gprefs(void *sesskey, char *name, char *def,
     }
 }
 
-/* 
+/*
  * Write out a preference list.
  */
 static void wprefs(void *sesskey, char *name,
@@ -549,7 +549,6 @@ void save_open_settings(void *sesskey, Conf *conf)
     write_setting_i(sesskey, "WakeupReconnect", conf_get_int(conf, CONF_wakeup_reconnect));
     write_setting_i(sesskey, "WakeupReconnectDelay", conf_get_int(conf, CONF_wakeup_reconnect_delay));
     write_setting_i(sesskey, "FailureReconnect", conf_get_int(conf, CONF_failure_reconnect));
-    write_setting_i(sesskey, "StorageType", conf_get_int(conf, CONF_session_storagetype));
     write_setting_i(sesskey, "Tray", conf_get_int(conf, CONF_tray));
     write_setting_i(sesskey, "StartTray", conf_get_int(conf, CONF_start_tray));
     write_setting_i(sesskey, "TrayRestore", conf_get_int(conf, CONF_tray_restore));
@@ -712,10 +711,21 @@ void load_settings(char *section, Conf *conf)
 void load_settings_file(char *section, Conf * cfg)
 {
     void *sesskey;
-    set_storagetype(1);
+    int save = set_storagetype(STORAGE_DISK);
     sesskey = open_settings_r(section);
     load_open_settings(sesskey, cfg);
     close_settings_r(sesskey);
+    set_storagetype(save);
+}
+
+void load_settings_reg(char *section, Conf * cfg)
+{
+    void *sesskey;
+    int save = set_storagetype(STORAGE_REGISTRY);
+    sesskey = open_settings_r(section);
+    load_open_settings(sesskey, cfg);
+    close_settings_r(sesskey);
+    set_storagetype(save);
 }
 
 void load_open_settings(void *sesskey, Conf *conf)
@@ -877,7 +887,6 @@ void load_open_settings(void *sesskey, Conf *conf)
     gppi(sesskey, "WakeupReconnect", 0, conf, CONF_wakeup_reconnect);
     gppi(sesskey, "WakeupReconnectDelay", 0, conf, CONF_wakeup_reconnect_delay);
     gppi(sesskey, "FailureReconnect", 0, conf, CONF_failure_reconnect);
-    gppi(sesskey, "StorageType", 0, conf, CONF_session_storagetype);
     gppi(sesskey, "Tray", TRAY_NORMAL, conf, CONF_tray);
     gppi(sesskey, "StartTray", 0, conf, CONF_start_tray);
     gppi(sesskey, "TrayRestore", 1, conf, CONF_tray_restore);
@@ -1097,12 +1106,26 @@ void do_defaults_file(char *session, Conf * cfg)
     load_settings_file(session, cfg);
 }
 
-/** Load from registry, and, if that doesn't make it launchable, load from the file */
-void do_defaults_then_file(char *session, Conf *conf)
+void do_defaults_reg(char *session, Conf * cfg)
 {
-    do_defaults(session, conf);
-    if (conf && !conf_launchable(conf))
-        do_defaults_file(session, conf);
+    load_settings_reg(session, cfg);
+}
+
+// Load from both locations, storagetype defines order of lookup
+void do_defaults_any(char *session, Conf *conf)
+{
+    if( get_storagetype() == STORAGE_REGISTRY )
+    {
+       do_defaults_reg(session, conf);
+       if (conf && !conf_launchable(conf))
+           do_defaults_file(session, conf);
+    }
+    else
+    {
+       do_defaults_file(session, conf);
+       if (conf && !conf_launchable(conf))
+           do_defaults_reg(session, conf);
+    }
 }
 
 static int sessioncmp(const void *av, const void *bv)
@@ -1125,28 +1148,17 @@ static int sessioncmp(const void *av, const void *bv)
     return strcmp(a, b);	       /* otherwise, compare normally */
 }
 
-/*
- * HACK: PuttyTray / PuTTY File
- * Updated get_sesslist with storagetype
- */
-int get_sesslist(struct sesslist *list, int allocate, int storagetype) // HACK: PuTTYTray / PuTTY File - changed return type
+void get_sesslist(struct sesslist *list, int allocate)
 {
     char otherbuf[2048];
     int buflen, bufsize, i;
     char *p, *ret;
     void *handle;
-	
-    // HACK: PUTTY FILE
-    int autoswitch = 0;
-    if (storagetype > 1) {
-	storagetype = storagetype - 2;
-	autoswitch = 1;
-    }
 
     if (allocate) {
 	buflen = bufsize = 0;
 	list->buffer = NULL;
-	if ((handle = enum_settings_start(storagetype)) != NULL) { // HACK: PuTTYTray / PuTTY File - storagetype
+	if ((handle = enum_settings_start()) != NULL) {
 	    do {
 		ret = enum_settings_next(handle, otherbuf, sizeof(otherbuf));
 		if (ret) {
@@ -1164,46 +1176,6 @@ int get_sesslist(struct sesslist *list, int allocate, int storagetype) // HACK: 
 	}
 	list->buffer = sresize(list->buffer, buflen + 1, char);
 	list->buffer[buflen] = '\0';
-
-	/*
-	 * HACK: PuttyTray / PuTTY File
-	 * Switch to file mode if registry is empty (and in registry mode)
-	 */
-	if (autoswitch == 1 && storagetype != 1 && buflen == 0) {
-	    storagetype = 1;
-
-	    // Ok, this is a copy of the code above. Crude but working
-	    buflen = bufsize = 0;
-	    list->buffer = NULL;
-	    if ((handle = enum_settings_start(1)) != NULL) { // Force file storage type
-		do {
-		    ret = enum_settings_next(handle, otherbuf, sizeof(otherbuf));
-		    if (ret) {
-		        int len = strlen(otherbuf) + 1;
-		        if (bufsize < buflen + len) {
-		            bufsize = buflen + len + 2048;
-		            list->buffer = sresize(list->buffer, bufsize, char);
-		        }
-                        assert(list->buffer);
-		        strcpy(list->buffer + buflen, otherbuf);
-		        buflen += strlen(list->buffer + buflen) + 1;
-		    }
-		} while (ret);
-		enum_settings_finish(handle);
-	    }
-	    list->buffer = sresize(list->buffer, buflen + 1, char);
-	    list->buffer[buflen] = '\0';
-	}
-
-	/*
-	 * HACK: PuttyTray / PuTTY File
-	 * If registry is empty AND file store is empty, show empty registry
-	 */
-	if (autoswitch == 1 && storagetype == 1 && buflen == 0) {
-	    storagetype = 0;
-	    set_storagetype(storagetype);
-	}
-
 
 	/*
 	 * Now set up the list of sessions. Note that "Default
@@ -1240,10 +1212,4 @@ int get_sesslist(struct sesslist *list, int allocate, int storagetype) // HACK: 
 	list->buffer = NULL;
 	list->sessions = NULL;
     }
-
-    /*
-     * HACK: PuttyTray / PuTTY File
-     * Return storagetype
-     */
-    return storagetype;
 }

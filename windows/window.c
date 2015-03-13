@@ -1,5 +1,4 @@
-/*
- * window.c - the PuTTY(tel) main program, which runs a PuTTY terminal
+ /* window.c - the PuTTY(tel) main program, which runs a PuTTY terminal
  * emulator and backend in a window.
  */
 
@@ -128,7 +127,7 @@ static int font_width, font_height, font_dualwidth, font_varpitch;
 static int offset_width, offset_height;
 static int was_zoomed = 0;
 static int prev_rows, prev_cols;
-  
+
 static int pending_netevent = 0;
 static WPARAM pend_netevent_wParam = 0;
 static LPARAM pend_netevent_lParam = 0;
@@ -245,12 +244,12 @@ static time_t last_reconnect = 0;
 
 /*
  * HACK: PuttyTray / Always on top
- */ 
+ */
 void MakeWindowOnTop(HWND hwnd);
 
 /*
  * HACK: PuttyTray / Transparency
- */ 
+ */
 BOOL MakeWindowTransparent(HWND hWnd, int factor);
 
 typedef DWORD (WINAPI *PSLWA)(HWND, DWORD, BYTE, DWORD);
@@ -448,7 +447,7 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
      * using instead.
      */
     if (osVersion.dwMajorVersion < 4 ||
-	(osVersion.dwMajorVersion == 4 && 
+	(osVersion.dwMajorVersion == 4 &&
 	 osVersion.dwPlatformId != VER_PLATFORM_WIN32_NT))
 	wm_mousewheel = RegisterWindowMessage("MSWHEEL_ROLLMSG");
 
@@ -459,6 +458,8 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
     conf = conf_new();
 
     urlhack_init();
+
+    storage_init();
 
     /*
      * Initialize COM.
@@ -518,7 +519,7 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	    while (i > 1 && isspace(p[i - 1]))
 		i--;
 	    p[i] = '\0';
-	    do_defaults_then_file(p + 1, conf);
+	    do_defaults_any(p + 1, conf);
 
 	    if (!conf_launchable(conf) && !do_config()) {
 		cleanup_exit(0);
@@ -551,7 +552,7 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	     */
 	    int argc, i;
 	    char **argv;
-	    
+
 	    split_into_argv(cmdline, &argc, &argv, NULL);
 
 	    for (i = 0; i < argc; i++) {
@@ -721,7 +722,7 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
              */
             {
                 char *c = strchr(host, ':');
- 
+
                 if (c) {
                     char *d = strchr(c+1, ':');
                     if (!d)
@@ -908,7 +909,7 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 
 	savedsess_menu = CreateMenu();
 
-	get_sesslist(&sesslist, TRUE, conf_get_int(conf, CONF_session_storagetype));
+	get_sesslist(&sesslist, TRUE);
 	update_savedsess_menu();
 
 	for (j = 0; j < lenof(popup_menus); j++) {
@@ -948,10 +949,10 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 
     start_backend();
 
-    puttyTray.cbSize = sizeof(NOTIFYICONDATA); 
-    puttyTray.hWnd = hwnd; 
-    puttyTray.uID = 1983; 
-    puttyTray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; 
+    puttyTray.cbSize = sizeof(NOTIFYICONDATA);
+    puttyTray.hWnd = hwnd;
+    puttyTray.uID = 1983;
+    puttyTray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     puttyTray.uCallbackMessage = WM_NOTIFY_PUTTYTRAY;
 
     if (conf_get_filename(conf, CONF_win_icon) && conf_get_filename(conf, CONF_win_icon)->path[0]) {
@@ -996,7 +997,7 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
      * Finally show the window (or the trayicon)!
      */
     puttyTrayVisible = FALSE;
-	
+
     if (conf_get_int(conf, CONF_tray) == TRAY_START || conf_get_int(conf, CONF_tray) == TRAY_ALWAYS) {
         taskbar_addicon(conf_get_int(conf, CONF_win_name_always) ? window_name : icon_name, TRUE);
     }
@@ -1066,8 +1067,8 @@ int putty_main(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
  */
 void cleanup_exit(int code)
 {
-    /* HACK: PuttyTray 
-     * Remove trayicon on close 
+    /* HACK: PuttyTray
+     * Remove trayicon on close
      */
     taskbar_addicon("", FALSE);
     DestroyIcon(puttyTray.hIcon);
@@ -1585,7 +1586,7 @@ static int get_font_width(HDC hdc, const TEXTMETRIC *tm)
  *
  * - verify that the bold font is the same width as the ordinary
  *   one, and engage shadow bolding if not.
- * 
+ *
  * - verify that the underlined font is the same width as the
  *   ordinary one (manual underlining by means of line drawing can
  *   be done in a pinch).
@@ -1893,8 +1894,8 @@ void request_resize(void *frontend, int w, int h)
 
 static void reset_window(int reinit) {
     /*
-     * This function decides how to resize or redraw when the 
-     * user changes something. 
+     * This function decides how to resize or redraw when the
+     * user changes something.
      *
      * This function doesn't like to change the terminal size but if the
      * font size is locked that may be it's only soluion.
@@ -1933,7 +1934,7 @@ static void reset_window(int reinit) {
 	return;
 
     /* Is the window out of position ? */
-    if ( !reinit && 
+    if ( !reinit &&
 	    (offset_width != (win_width-font_width*term->cols)/2 ||
 	     offset_height != (win_height-font_height*term->rows)/2) ){
 	offset_width = (win_width-font_width*term->cols)/2;
@@ -1953,7 +1954,7 @@ static void reset_window(int reinit) {
 	extra_height = wr.bottom - wr.top - cr.bottom + cr.top;
 
 	if (resize_action != RESIZE_MAXTERM && resize_action != RESIZE_TERM && resize_action != RESIZE_DISABLED) {
-	    if (font_width != win_width/term->cols || 
+	    if (font_width != win_width/term->cols ||
 		font_height != win_height/term->rows) {
 		deinit_fonts();
 		init_fonts(win_width/term->cols, win_height/term->rows);
@@ -1966,9 +1967,9 @@ static void reset_window(int reinit) {
 #endif
 	    }
 	} else {
-	    if (font_width * term->cols != win_width || 
+	    if (font_width * term->cols != win_width ||
 		font_height * term->rows != win_height) {
-		/* Our only choice at this point is to change the 
+		/* Our only choice at this point is to change the
 		 * size of the terminal; Oh well.
 		 */
 		term_size(term, win_height/font_height, win_width/font_width,
@@ -2003,8 +2004,8 @@ static void reset_window(int reinit) {
 	     * allowed window size, we will then be back in here and resize
 	     * the font or terminal to fit.
 	     */
-	    SetWindowPos(hwnd, NULL, 0, 0, 
-		         font_width*term->cols + extra_width, 
+	    SetWindowPos(hwnd, NULL, 0, 0,
+		         font_width*term->cols + extra_width,
 			 font_height*term->rows + extra_height,
 			 SWP_NOMOVE | SWP_NOZORDER);
 	}
@@ -2013,7 +2014,7 @@ static void reset_window(int reinit) {
 	return;
     }
 
-    /* Okay the user doesn't want us to change the font so we try the 
+    /* Okay the user doesn't want us to change the font so we try the
      * window. But that may be too big for the screen which forces us
      * to change the terminal.
      */
@@ -2030,7 +2031,7 @@ static void reset_window(int reinit) {
 
 	    static RECT ss;
 	    int width, height;
-		
+
 		get_fullscreen_rect(&ss);
 
 	    width = (ss.right - ss.left - extra_width) / font_width;
@@ -2063,9 +2064,9 @@ static void reset_window(int reinit) {
 #endif
 		}
 	    }
-	    
-	    SetWindowPos(hwnd, NULL, 0, 0, 
-		         font_width*term->cols + extra_width, 
+
+	    SetWindowPos(hwnd, NULL, 0, 0,
+		         font_width*term->cols + extra_width,
 			 font_height*term->rows + extra_height,
 			 SWP_NOMOVE | SWP_NOZORDER);
 
@@ -2081,11 +2082,11 @@ static void reset_window(int reinit) {
 
     /* We're allowed to or must change the font but do we want to ?  */
 
-    if (font_width != (win_width-window_border*2)/term->cols || 
+    if (font_width != (win_width-window_border*2)/term->cols ||
 	font_height != (win_height-window_border*2)/term->rows) {
 
 	deinit_fonts();
-	init_fonts((win_width-window_border*2)/term->cols, 
+	init_fonts((win_width-window_border*2)/term->cols,
 		   (win_height-window_border*2)/term->rows);
 	offset_width = (win_width-font_width*term->cols)/2;
 	offset_height = (win_height-font_height*term->rows)/2;
@@ -2095,7 +2096,7 @@ static void reset_window(int reinit) {
 
 	InvalidateRect(hwnd, NULL, TRUE);
 #ifdef RDB_DEBUG_PATCH
-	debug((25, "reset_window() -> font resize to (%d,%d)", 
+	debug((25, "reset_window() -> font resize to (%d,%d)",
 		   font_width, font_height));
 #endif
     }
@@ -2241,7 +2242,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 
 	/*
 	 * HACK: PuttyTray / Nutty
-	 */ 
+	 */
 	POINT cursor_pt;
 
     switch (message) {
@@ -2280,12 +2281,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	if ((HMENU)wParam == savedsess_menu) {
 	    /* About to pop up Saved Sessions sub-menu.
 	     * Refresh the session list. */
-	    /*
-             * HACK: PuttyTray / PuTTY File
-             * Added storagetype to get_sesslist
-             */
-	    get_sesslist(&sesslist, FALSE, conf_get_int(conf, CONF_session_storagetype)); /* free */
-	    get_sesslist(&sesslist, TRUE, conf_get_int(conf, CONF_session_storagetype));
+	    get_sesslist(&sesslist, FALSE); /* free */
+	    get_sesslist(&sesslist, TRUE);
 	    update_savedsess_menu();
 	    return 0;
 	}
@@ -2386,7 +2383,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 
 		/*
 		 * HACK: PuttyTray / Session Icon
-		 */ 
+		 */
 		HINSTANCE inst;
 		HICON hIcon;
 
@@ -2421,7 +2418,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		    int i;
 		    for (i = 0; i < lenof(popup_menus); i++)
 			EnableMenuItem(popup_menus[i].menu, IDM_FULLSCREEN,
-				       MF_BYCOMMAND | 
+				       MF_BYCOMMAND |
 				       (resize_action == RESIZE_DISABLED)
 				       ? MF_GRAYED : MF_ENABLED);
 		    /* Gracefully unzoom if necessary */
@@ -2474,7 +2471,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
                     hIcon = extract_icon(filename_to_str(conf_get_filename(conf, CONF_win_icon)), TRUE);
 		    DestroyIcon(puttyTray.hIcon);
 		    puttyTray.hIcon = hIcon;
-		    SetClassLongPtr(hwnd, GCLP_HICON, extract_icon(filename_to_str(conf_get_filename(conf, CONF_win_icon)), FALSE));
+		    SetClassLongPtr(hwnd, GCLP_HICON, (LONG_PTR)extract_icon(filename_to_str(conf_get_filename(conf, CONF_win_icon)), FALSE));
 		    SetClassLongPtr(hwnd, GCLP_HICONSM, (LONG_PTR)hIcon);
 		} else {
 		    inst = (HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE);
@@ -2644,7 +2641,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	  /*
 	   * HACK: PuttyTray / Always on top
 	   */
-	  case IDM_VISIBLE: 
+	  case IDM_VISIBLE:
 	      MakeWindowOnTop(hwnd);
 	      break ;
 
@@ -2940,7 +2937,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	     * pending terminal update: just mark the relevant
 	     * character cells as INVALID and wait for the
 	     * scheduled full update to sort it out.
-	     * 
+	     *
 	     * I have a suspicion this isn't the _right_ solution.
 	     * An alternative approach would be to have terminal.c
 	     * separately track what _should_ be on the terminal
@@ -2954,7 +2951,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	     * current terminal appearance so that WM_PAINT becomes
 	     * completely trivial. However, this should do for now.
 	     */
-	    term_paint(term, hdc, 
+	    term_paint(term, hdc,
 		       (p.rcPaint.left-offset_width)/font_width,
 		       (p.rcPaint.top-offset_height)/font_height,
 		       (p.rcPaint.right-offset_width-1)/font_width,
@@ -2972,7 +2969,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		fillcolour = CreateSolidBrush (
 				    colours[ATTR_DEFBG>>ATTR_BGSHIFT]);
 		oldbrush = SelectObject(hdc, fillcolour);
-		edge = CreatePen(PS_SOLID, 0, 
+		edge = CreatePen(PS_SOLID, 0,
 				    colours[ATTR_DEFBG>>ATTR_BGSHIFT]);
 		oldpen = SelectObject(hdc, edge);
 
@@ -2987,12 +2984,12 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 			p.rcPaint.left, p.rcPaint.top,
 			p.rcPaint.right, p.rcPaint.bottom);
 
-		ExcludeClipRect(hdc, 
+		ExcludeClipRect(hdc,
 			offset_width, offset_height,
 			offset_width+font_width*term->cols,
 			offset_height+font_height*term->rows);
 
-		Rectangle(hdc, p.rcPaint.left, p.rcPaint.top, 
+		Rectangle(hdc, p.rcPaint.left, p.rcPaint.top,
 			  p.rcPaint.right, p.rcPaint.bottom);
 
 		/* SelectClipRgn(hdc, NULL); */
@@ -3075,10 +3072,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	    if (!need_backend_resize && resize_action == RESIZE_EITHER &&
 		(conf_get_int(conf, CONF_height) != term->rows ||
 		 conf_get_int(conf, CONF_width) != term->cols)) {
-		/* 
+		/*
 		 * Great! It seems that both the terminal size and the
 		 * font size have been changed and the user is now dragging.
-		 * 
+		 *
 		 * It will now be difficult to get back to the configured
 		 * font size!
 		 *
@@ -3463,7 +3460,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	    int n;
 	    char *buff;
 
-	    if(osVersion.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS || 
+	    if(osVersion.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS ||
 	        osVersion.dwPlatformId == VER_PLATFORM_WIN32s) break; /* no Unicode */
 
 	    if ((lParam & GCS_RESULTSTR) == 0) /* Composition unfinished. */
@@ -3595,11 +3592,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	 */
       case WM_NOTIFY_PUTTYTRAY:
         {
-            UINT uID; 
-            UINT uMouseMsg; 
-			
-            uID = (UINT)wParam; 
-            uMouseMsg = (UINT)lParam; 
+            UINT uID;
+            UINT uMouseMsg;
+
+            uID = (UINT)wParam;
+            uMouseMsg = (UINT)lParam;
 
             if (uID == 1983) {
 	        if (uMouseMsg == WM_LBUTTONDBLCLK || (conf_get_int(conf, CONF_tray_restore) == TRUE && uMouseMsg == WM_LBUTTONUP)) {
@@ -3609,7 +3606,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		    }
 
 		    // Sleep a little while, otherwise the click event is sent to, for example, the Outlook 2003 Tray Icon, and it will also pop its menu.
-		    Sleep(100); 
+		    Sleep(100);
 
 		    // If trayicon is always visible, the icon should also be able to hide the window
 		    if (windowMinimized) {
@@ -3757,7 +3754,7 @@ static void sys_cursor_update(void)
 
     /* IMM calls on Win98 and beyond only */
     if(osVersion.dwPlatformId == VER_PLATFORM_WIN32s) return; /* 3.11 */
-    
+
     if(osVersion.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS &&
 	    osVersion.dwMinorVersion == 0) return; /* 95 */
 
@@ -4083,7 +4080,7 @@ void do_text_internal(Context ctx, int x, int y, wchar_t *text, int len,
                  * can leave 'droppings' even with the clip box! I
                  * suppose I could loop it one character at a time ...
                  * yuk.
-                 * 
+                 *
                  * Or ... I could do a test print with "W", and use +1
                  * or -1 for this shift depending on if the leftmost
                  * column is blank...
@@ -4918,8 +4915,8 @@ static int TranslateKey(UINT message, WPARAM wParam, LPARAM lParam,
 	    p += sprintf((char *) p, "\x1B%c", " HLMEIG"[code]);
 	    return p - output;
 	}
-	
-	/* 4690 function and special keys */ 
+
+	/* 4690 function and special keys */
 	if (funky_type == FUNKY_4690) {
 		if (code >= 11 && code <= 34) {
 		    /* SCO function keys */
@@ -5071,7 +5068,7 @@ static int TranslateKey(UINT message, WPARAM wParam, LPARAM lParam,
 	    alt_sum = 0;
     }
 
-    /* Okay we've done everything interesting; let windows deal with 
+    /* Okay we've done everything interesting; let windows deal with
      * the boring stuff */
     {
 	BOOL capsOn=0;
@@ -5210,8 +5207,8 @@ static int TranslateKey(UINT message, WPARAM wParam, LPARAM lParam,
 			term_seen_key_event(term);
 			if (ldisc)
 			    luni_send(ldisc,
-				    cbuf + !(left_alt & !conf_get_int(conf, CONF_alt_metabit)), 
-				    1+!!(left_alt & !conf_get_int(conf, CONF_alt_metabit)), 
+				    cbuf + !(left_alt & !conf_get_int(conf, CONF_alt_metabit)),
+				    1+!!(left_alt & !conf_get_int(conf, CONF_alt_metabit)),
 				    1);
 		    }
 		}
@@ -5463,7 +5460,7 @@ static void detect_and_launch_url(char *urldata) {
 /*
  * Note: unlike write_aclip() this will not append a nul.
  */
-void write_clip(struct Terminal *term, void *frontend, wchar_t * data, int *attr, int len, int must_deselect)
+void write_clip(Terminal *term, void *frontend, wchar_t * data, int *attr, int len, int must_deselect)
 {
     HGLOBAL clipdata, clipdata2, clipdata3;
     int len2;
@@ -5601,7 +5598,7 @@ void write_clip(struct Terminal *term, void *frontend, wchar_t * data, int *attr
 	 * looked up in `unitab', we just copy straight over from
 	 * tdata. For each one that doesn't, we must WCToMB it
 	 * individually and produce a \u escape sequence.
-	 * 
+	 *
 	 * It would probably be more robust to just bite the bullet
 	 * and WCToMB each individual Unicode character one by one,
 	 * then MBToWC each one back to see if it was an accurate
@@ -5661,7 +5658,7 @@ void write_clip(struct Terminal *term, void *frontend, wchar_t * data, int *attr
 		    attrBold  = attr[tindex] & ATTR_BOLD;
 		else
 		    attrBold  = 0;
-                
+
 		attrUnder = attr[tindex] & ATTR_UNDER;
 
                 /*
@@ -6007,7 +6004,7 @@ static void flash_window_timer(void *ctx, unsigned long now)
 */
 /*
  * HACK: PuttyTray
- * REPLACED flash_window with flash_window from PuTTY 0.58. 
+ * REPLACED flash_window with flash_window from PuTTY 0.58.
  * The new version with FlashWindowEx is nice but where do I trigger the icon flash if I use it?
  */
 static void flash_window(int mode)
@@ -6148,7 +6145,7 @@ void set_iconic(void *frontend, int iconic)
 void move_window(void *frontend, int x, int y)
 {
     int resize_action = conf_get_int(conf, CONF_resize_action);
-    if (resize_action == RESIZE_DISABLED || 
+    if (resize_action == RESIZE_DISABLED ||
 	resize_action == RESIZE_FONT ||
 	IsZoomed(hwnd))
        return;
@@ -6261,7 +6258,7 @@ static int get_fullscreen_rect(RECT * ss)
 	ss->left = ss->top = 0;
 	ss->right = GetSystemMetrics(SM_CXSCREEN);
 	ss->bottom = GetSystemMetrics(SM_CYSCREEN);
-*/ 
+*/
 	return GetClientRect(GetDesktopWindow(), ss);
 #endif
 }
@@ -6280,7 +6277,7 @@ static void make_full_screen()
 
 	if (is_full_screen())
 		return;
-	
+
     /* Remove the window furniture. */
     style = GetWindowLongPtr(hwnd, GWL_STYLE);
     style &= ~(WS_CAPTION | WS_BORDER | WS_THICKFRAME);
@@ -6406,7 +6403,7 @@ void agent_schedule_callback(void (*callback)(void *, void *, int),
 /*
  * HACK: PuttyTray / Transparency
  * Function to set the window transparency
- */ 
+ */
 BOOL MakeWindowTransparent(HWND hWnd, int factor)
 {
     // First, see if we can get the API call we need. If we've tried once, we don't need to try again.
@@ -6432,9 +6429,9 @@ BOOL MakeWindowTransparent(HWND hWnd, int factor)
             return FALSE;
         }
 
-        // Now, we need to set the 'layered window attributes'. This is where the alpha values get set. 
+        // Now, we need to set the 'layered window attributes'. This is where the alpha values get set.
         return pSetLayeredWindowAttributes (hWnd, RGB(255,255,255), factor, LWA_ALPHA);
-    
+
     // Make the window opaque
     } else {
         SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) & ~WS_EX_LAYERED);
@@ -6445,11 +6442,11 @@ BOOL MakeWindowTransparent(HWND hWnd, int factor)
 /*
  * HACK: PuttyTray / Always on top
  * Function to switch the window positioning to and from 'always on top'
- */ 
+ */
 void MakeWindowOnTop(HWND hwnd) {
     HMENU m;
     if ((m = GetSystemMenu(hwnd, FALSE)) != NULL) {
-        DWORD fdwMenu = GetMenuState(m, (UINT)IDM_VISIBLE, MF_BYCOMMAND); 
+        DWORD fdwMenu = GetMenuState(m, (UINT)IDM_VISIBLE, MF_BYCOMMAND);
         if (!(fdwMenu & MF_CHECKED)) {
             CheckMenuItem(m, (UINT)IDM_VISIBLE, MF_BYCOMMAND|MF_CHECKED);
             SetWindowPos(hwnd, (HWND)-1, 0, 0, 0, 0, SWP_NOMOVE |SWP_NOSIZE);
@@ -6465,16 +6462,16 @@ void MakeWindowOnTop(HWND hwnd) {
  * HACK: PuttyTray
  * Function to add icon to the taskbar's system tray
  */
-BOOL taskbar_addicon(LPSTR lpszTip, BOOL showIcon) 
-{ 
-    BOOL icon_result; 
+BOOL taskbar_addicon(LPSTR lpszTip, BOOL showIcon)
+{
+    BOOL icon_result;
 
     if (showIcon) {
 	// Set Tooltip
 	if (lpszTip) {
 	    strncpy(puttyTray.szTip, lpszTip, sizeof(puttyTray.szTip));
 	} else {
-	    puttyTray.szTip[0] = (TCHAR)'\0'; 
+	    puttyTray.szTip[0] = (TCHAR)'\0';
 	}
 
 	// Set icon visibility
@@ -6482,21 +6479,21 @@ BOOL taskbar_addicon(LPSTR lpszTip, BOOL showIcon)
 	    tray_updatemenu(TRUE);
 	    icon_result = Shell_NotifyIcon(NIM_ADD, &puttyTray);
 	    puttyTrayVisible = TRUE;
-	    return icon_result; 
+	    return icon_result;
 	} else {
 	    icon_result = Shell_NotifyIcon(NIM_MODIFY, &puttyTray);
-	    return icon_result; 
+	    return icon_result;
 	}
     } else {
 	if (puttyTrayVisible) {
 	    tray_updatemenu(FALSE);
 	    icon_result = Shell_NotifyIcon(NIM_DELETE, &puttyTray);
 	    puttyTrayVisible = FALSE;
-	    return icon_result; 
+	    return icon_result;
 	}
     }
 
-    return TRUE; 
+    return TRUE;
 }
 
 void tray_updatemenu(BOOL disableMenuItems)
@@ -6517,7 +6514,7 @@ void tray_updatemenu(BOOL disableMenuItems)
 	mii.fMask = MIIM_BITMAP;
 	mii.hbmpItem = HBMMENU_POPUP_CLOSE;
 	SetMenuItemInfo(popup_menus[CTXMENU].menu, IDM_TRAYCLOSE, FALSE, &mii);
-		
+
 	// Set restore icon on restore menuitem
 	mii.hbmpItem = HBMMENU_POPUP_RESTORE;
 	SetMenuItemInfo(popup_menus[CTXMENU].menu, IDM_TRAYRESTORE, FALSE, &mii);
@@ -6528,12 +6525,12 @@ void tray_updatemenu(BOOL disableMenuItems)
 	DeleteMenu(popup_menus[CTXMENU].menu, IDM_TRAYSEP, MF_BYCOMMAND);
 	DeleteMenu(popup_menus[CTXMENU].menu, IDM_TRAYRESTORE, MF_BYCOMMAND);
 	DeleteMenu(popup_menus[CTXMENU].menu, IDM_TRAYCLOSE, MF_BYCOMMAND);
-		
+
 	mii.fMask = MIIM_STATE;
 	mii.fState = MFS_ENABLED;
     }
 
-    SetMenuItemInfo(popup_menus[CTXMENU].menu, specials_menu, FALSE, &mii);
+    SetMenuItemInfo(popup_menus[CTXMENU].menu, (UINT)specials_menu, FALSE, &mii);
     SetMenuItemInfo(popup_menus[CTXMENU].menu, IDM_PASTE, FALSE, &mii);
     SetMenuItemInfo(popup_menus[CTXMENU].menu, IDM_FULLSCREEN, FALSE, &mii);
     SetMenuItemInfo(popup_menus[CTXMENU].menu, IDM_RESET, FALSE, &mii);

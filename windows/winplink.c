@@ -184,7 +184,13 @@ static void usage(void)
     printf("  -V        print version information and exit\n");
     printf("  -pgpfp    print PGP key fingerprints and exit\n");
     printf("  -v        show verbose messages\n");
-    printf("  -load sessname  Load settings from saved session\n");
+#ifdef _WINDOWS
+    printf("  -load[reg|file] sessname\n");
+    printf("            Load settings from saved session\n");
+#else
+    printf("  -load sessname\n");
+    printf("            Load settings from saved session\n");
+#endif
     printf("  -ssh -telnet -rlogin -raw -serial\n");
     printf("            force use of a particular protocol\n");
     printf("  -P port   connect to specified port\n");
@@ -304,6 +310,8 @@ int main(int argc, char **argv)
     int use_subsystem = 0;
     unsigned long now, next, then;
 
+    storage_init();
+
     sklist = NULL;
     skcount = sksize = 0;
     /*
@@ -312,6 +320,7 @@ int main(int argc, char **argv)
      */
     default_protocol = PROT_SSH;
     default_port = 22;
+
 
     flags = FLAG_STDERR;
     /*
@@ -437,7 +446,7 @@ int main(int argc, char **argv)
 		     */
 		    {
 			Conf *conf2 = conf_new();
-			do_defaults_then_file(host, conf2);
+			do_defaults_any(host, conf2);
 			if (loaded_session || !conf_launchable(conf2)) {
 			    /* No settings for this host; use defaults */
 			    /* (or session was already loaded with -load) */
@@ -585,8 +594,32 @@ int main(int argc, char **argv)
     logctx = log_init(NULL, conf);
     console_provide_logctx(logctx);
 
+    // MMB: We need to properly initialize handles before they are used
+
+    inhandle  = GetStdHandle(STD_INPUT_HANDLE);
+    outhandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    errhandle = GetStdHandle(STD_ERROR_HANDLE);
+
+    /*
+     * Turn off ECHO and LINE input modes. We don't care if this
+     * call fails, because we know we aren't necessarily running in
+     * a console.
+     */
+    GetConsoleMode(inhandle, &orig_console_mode);
+    SetConsoleMode(inhandle, ENABLE_PROCESSED_INPUT);
+
+    /*
+     * Pass the output handles to the handle-handling subsystem.
+     * (The input one we leave until we're through the
+     * authentication process.)
+     */
+    stdout_handle = handle_output_new(outhandle, stdouterr_sent, NULL, 0);
+    stderr_handle = handle_output_new(errhandle, stdouterr_sent, NULL, 0);
+
     /*
      * Start up the connection.
+     *
+     * MMB: Since back->init wants to send log to console, console has to be initialized first!
      */
     netevent = CreateEvent(NULL, FALSE, FALSE, NULL);
     {
@@ -610,26 +643,6 @@ int main(int argc, char **argv)
     }
     connopen = 1;
 
-    inhandle = GetStdHandle(STD_INPUT_HANDLE);
-    outhandle = GetStdHandle(STD_OUTPUT_HANDLE);
-    errhandle = GetStdHandle(STD_ERROR_HANDLE);
-
-    /*
-     * Turn off ECHO and LINE input modes. We don't care if this
-     * call fails, because we know we aren't necessarily running in
-     * a console.
-     */
-    GetConsoleMode(inhandle, &orig_console_mode);
-    SetConsoleMode(inhandle, ENABLE_PROCESSED_INPUT);
-
-    /*
-     * Pass the output handles to the handle-handling subsystem.
-     * (The input one we leave until we're through the
-     * authentication process.)
-     */
-    stdout_handle = handle_output_new(outhandle, stdouterr_sent, NULL, 0);
-    stderr_handle = handle_output_new(errhandle, stdouterr_sent, NULL, 0);
-
     main_thread_id = GetCurrentThreadId();
 
     sending = FALSE;
@@ -638,7 +651,7 @@ int main(int argc, char **argv)
 
     while (1) {
 	int nhandles;
-	HANDLE *handles;	
+	HANDLE *handles;
 	int n;
 	DWORD ticks;
 

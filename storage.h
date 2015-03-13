@@ -18,7 +18,15 @@
  * HACK: PuttyTray / PuTTY File
  * Function to force the storage loader to a certain type
  */
-void set_storagetype(int new_storagetype);
+
+void storage_init();
+
+enum {
+   STORAGE_REGISTRY, STORAGE_DISK
+};
+
+int set_storagetype(int new_storagetype);
+int get_storagetype();
 
 /*
  * Write a saved session. The caller is expected to call
@@ -31,7 +39,7 @@ void set_storagetype(int new_storagetype);
  * A given key will be written at most once while saving a session.
  * Keys may be up to 255 characters long.  String values have no length
  * limit.
- * 
+ *
  * Any returned error message must be freed after use.
  */
 void *open_settings_w(const char *sessionname, char **errmsg);
@@ -46,12 +54,12 @@ void close_settings_w(void *handle);
  * open_setting_r() to get a `void *' handle, then pass that to a
  * number of calls to read_setting_s() and read_setting_i(), and
  * then close it using close_settings_r().
- * 
+ *
  * read_setting_s() returns a dynamically allocated string which the
  * caller must free. read_setting_filename() and
  * read_setting_fontspec() likewise return dynamically allocated
  * structures.
- * 
+ *
  * If a particular string setting is not present in the session,
  * read_setting_s() can return NULL, in which case the caller
  * should invent a sensible default. If an integer setting is not
@@ -72,7 +80,7 @@ void del_settings(const char *sessionname);
 /*
  * Enumerate all saved sessions.
  */
-void *enum_settings_start(int new_storagetype); // HACK: PuttyTray / PuTTY File - enum_settings_start with storagetype
+void *enum_settings_start();
 char *enum_settings_next(void *handle, char *buffer, int buflen);
 void enum_settings_finish(void *handle);
 

@@ -456,10 +456,15 @@ void del_settings(const char *sessionname)
     sfree(filename);
 }
 
-void set_storagetype(int storagetype_IGNORED) {
+int set_storagetype(int storagetype_IGNORED) {
+    return 0;
 }
 
-void *enum_settings_start(int storagetype_IGNORED)
+int get_storagetype() {
+    return 0;
+}
+
+void *enum_settings_start()
 {
     DIR *dp;
     char *filename;

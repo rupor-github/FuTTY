@@ -4,7 +4,7 @@
  *
  * This is mainly based on ssh-1.2.26/scp.c by Timo Rinne & Tatu Ylonen.
  * They, in turn, used stuff from BSD rcp.
- * 
+ *
  * (SGT, 2001-09-10: Joris van Rantwijk assures me that although
  * this file as originally submitted was inspired by, and
  * _structurally_ based on, ssh-1.2.26's scp.c, there wasn't any
@@ -386,11 +386,11 @@ static void do_cmd(char *host, char *user, char *cmd)
 	/* Try to load settings for `host' into a temporary config */
 	Conf *conf2 = conf_new();
 	conf_set_str(conf2, CONF_host, "");
-	do_defaults_then_file(host, conf2);
+	do_defaults_any(host, conf2);
 	if (conf_get_str(conf2, CONF_host)[0] != '\0') {
 	    /* Settings present and include hostname */
 	    /* Re-load data into the real config. */
-	    do_defaults(host, conf);
+	    do_defaults_any(host, conf);
 	} else {
 	    /* Session doesn't exist or mention a hostname. */
 	    /* Use `host' as a bare hostname. */
@@ -1316,7 +1316,7 @@ int scp_get_sink_action(struct scp_sink_action *act)
 	     * this merits a complaint (which is fatal if the name
 	     * was specified directly, but not if it was matched by
 	     * a wildcard).
-	     * 
+	     *
 	     * We skip this complaint completely if
 	     * scp_sftp_wildcard is set, because that's an
 	     * indication that we're not actually supposed to
@@ -1342,7 +1342,7 @@ int scp_get_sink_action(struct scp_sink_action *act)
 	     * set targetisdir. The next time we're called, we will
 	     * run through the list of filenames one by one,
 	     * matching them against a wildcard if present.
-	     * 
+	     *
 	     * If targetisdir is _already_ set (meaning we're
 	     * already in the middle of going through another such
 	     * list), we must push the other (target,namelist) pair
@@ -1541,7 +1541,7 @@ int scp_get_sink_action(struct scp_sink_action *act)
 	 */
 	{
 	    char sizestr[40];
-	
+
 	    if (sscanf(act->buf, "%lo %s %n", &act->permissions,
                        sizestr, &i) != 2)
 		bump("Protocol error: Illegal file descriptor format");
@@ -1764,7 +1764,7 @@ static void source(char *src)
 	char transbuf[4096];
 	int j, k = 4096;
 
-	if (uint64_compare(uint64_add32(i, k),size) > 0) /* i + k > size */ 
+	if (uint64_compare(uint64_add32(i, k),size) > 0) /* i + k > size */
 	    k = (uint64_subtract(size, i)).lo; 	/* k = size - i; */
 	if ((j = read_from_file(f, transbuf, k)) != k) {
 	    if (statistics)
@@ -1878,7 +1878,7 @@ static void sink(char *targ, char *src)
 	     * we'll find the last slash, backslash or colon in the
 	     * filename and use only the part after that. (And
 	     * warn!)
-	     * 
+	     *
 	     * In addition, we also ensure here that if we're
 	     * copying a single file and the target is a directory
 	     * (common usage: `pscp host:filename .') the remote
@@ -1886,7 +1886,7 @@ static void sink(char *targ, char *src)
 	     * distinguish this case because `src' will be non-NULL
 	     * and the last component of that will fail to match
 	     * (the last component of) the name sent.
-	     * 
+	     *
 	     * Well, not always; if `src' is a wildcard, we do
 	     * expect to get back filenames that don't correspond
 	     * exactly to it. Ideally in this case, we would like
@@ -2256,7 +2256,13 @@ static void usage(void)
     printf("  -q        quiet, don't show statistics\n");
     printf("  -r        copy directories recursively\n");
     printf("  -v        show verbose messages\n");
-    printf("  -load sessname  Load settings from saved session\n");
+#ifdef _WINDOWS
+    printf("  -load[reg|file] sessname\n");
+    printf("            Load settings from saved session\n");
+#else
+    printf("  -load sessname\n");
+    printf("            Load settings from saved session\n");
+#endif
     printf("  -P port   connect to specified port\n");
     printf("  -l user   connect with specified username\n");
     printf("  -pw passw login with specified password\n");
@@ -2318,6 +2324,7 @@ int psftp_main(int argc, char *argv[])
 	;
     cmdline_tooltype = TOOLTYPE_FILETRANSFER;
     sk_init();
+    storage_init();
 
     /* Load Default Settings before doing anything else. */
     conf = conf_new();

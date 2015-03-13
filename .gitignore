@@ -1,3 +1,4 @@
+windows/msvc*.bat
 windows/MSVC*
 windows/DEVCPP
 Makefile*

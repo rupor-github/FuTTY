@@ -14,14 +14,14 @@
  * eventual running configuration. For this we use the macro
  * SAVEABLE, which notices if the `need_save' parameter is set and
  * saves the parameter and value on a list.
- * 
+ *
  * We also assign priorities to saved parameters, just to slightly
  * ameliorate silly ordering problems. For example, if you specify
  * a saved session to load, it will be loaded _before_ all your
  * local modifications such as -L are evaluated; and if you specify
  * a protocol and a port, the protocol is set up first so that the
  * port can override its choice of port number.
- * 
+ *
  * (In fact -load is not saved at all, since in at least Plink the
  * processing of further command-line options depends on whether or
  * not the loaded session contained a hostname. So it must be
@@ -67,7 +67,7 @@ void cmdline_cleanup(void)
 	sfree(cmdline_password);
 	cmdline_password = NULL;
     }
-    
+
     for (pri = 0; pri < NPRIORITIES; pri++) {
 	sfree(saves[pri].params);
 	saves[pri].params = NULL;
@@ -163,10 +163,11 @@ int cmdline_process_param(char *p, char *value, int need_save, Conf *conf)
 {
     int ret = 0;
 
+    // Some commands should be processed immediately
+    // rather than being saved
+
     if (!strcmp(p, "-load")) {
 	RETURN(2);
-	/* This parameter must be processed immediately rather than being
-	 * saved. */
 	do_defaults(value, conf);
 	loaded_session = TRUE;
 	cmdline_session_name = dupstr(value);
@@ -176,6 +177,13 @@ int cmdline_process_param(char *p, char *value, int need_save, Conf *conf)
     if (!strcmp(p, "-loadfile") || !strcmp(p, "-file") || !strcmp(p, "-fileload")) {
         RETURN(2);
         do_defaults_file(value, conf);
+        loaded_session = TRUE;
+        return 2;
+    }
+
+    if (!strcmp(p, "-loadreg") || !strcmp(p, "-registry") || !strcmp(p, "-regload")) {
+        RETURN(2);
+        do_defaults_reg(value, conf);
         loaded_session = TRUE;
         return 2;
     }
@@ -223,7 +231,7 @@ int cmdline_process_param(char *p, char *value, int need_save, Conf *conf)
         SAVEABLE(0);
         default_protocol = PROT_ADB;
         conf_set_int(conf, CONF_protocol, default_protocol);
-    }    
+    }
     if (!strcmp(p, "-serial")) {
 	RETURN(1);
 	/* Serial is not NONNETWORK in an odd sense of the word */

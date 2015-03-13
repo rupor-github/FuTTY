@@ -304,9 +304,17 @@ static void console_data_untrusted(HANDLE hout, const char *data, int len)
     WriteFile(hout, data, len, &dummy, NULL);
 }
 
+static void console_close(HANDLE hin, HANDLE hout)
+{
+    if (hout != INVALID_HANDLE_VALUE)
+        CloseHandle(hout);
+    if (hin != INVALID_HANDLE_VALUE)
+        CloseHandle(hin);
+}
+
 int console_get_userpass_input(prompts_t *p, unsigned char *in, int inlen)
 {
-    HANDLE hin, hout;
+    HANDLE hin = INVALID_HANDLE_VALUE, hout = INVALID_HANDLE_VALUE;
     size_t curr_prompt;
 
     /*
@@ -327,7 +335,8 @@ int console_get_userpass_input(prompts_t *p, unsigned char *in, int inlen)
     if (p->n_prompts) {
 	if (console_batch_mode)
 	    return 0;
-	hin = GetStdHandle(STD_INPUT_HANDLE);
+	//hin = GetStdHandle(STD_INPUT_HANDLE);
+	hin = CreateFile("CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 	if (hin == INVALID_HANDLE_VALUE) {
 	    fprintf(stderr, "Cannot get standard input handle\n");
 	    cleanup_exit(1);
@@ -338,7 +347,8 @@ int console_get_userpass_input(prompts_t *p, unsigned char *in, int inlen)
      * And if we have anything to print, we need standard output.
      */
     if ((p->name_reqd && p->name) || p->instruction || p->n_prompts) {
-	hout = GetStdHandle(STD_OUTPUT_HANDLE);
+	//hout = GetStdHandle(STD_OUTPUT_HANDLE);
+	hout = CreateFile("CONOUT$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	if (hout == INVALID_HANDLE_VALUE) {
 	    fprintf(stderr, "Cannot get standard output handle\n");
 	    cleanup_exit(1);
@@ -410,11 +420,14 @@ int console_get_userpass_input(prompts_t *p, unsigned char *in, int inlen)
 	}
 
         if (len < 0) {
+            console_close(hin, hout);
             return 0;                  /* failure due to read error */
         }
 
 	pr->result[len] = '\0';
     }
+
+    console_close(hin, hout);
 
     return 1; /* success */
 }
